@@ -18,8 +18,8 @@ def symLinkTester(_url):
         bool: value of response 1 length equal to response 2 length
     """
     path = _url.split("/")[-1]
-    responseF = requests.get(_url, timeout=(20, 20), verify=False)
-    responseS = requests.get(f"{_url}/{path}/", timeout=(20, 20), verify=False)
+    responseF = requests.get(_url, headers=common.headers, timeout=(20, 20), verify=False)
+    responseS = requests.get(f"{_url}/{path}/", headers=common.headers, timeout=(20, 20), verify=False)
     return len(responseF.content) == len(responseS.content)
 
 def isFile(response):
@@ -55,9 +55,30 @@ def getPaths(response):
     """
     try:
         findings = re.findall(r"<tr><td valign=\"top\">(&nbsp;|<img src=\"[/\w+\.]+\" alt=\"([\[\w+\s\]]*)\">)*</td><td><a href=\"([/\w\.-]*)\">.*</td><td>&nbsp;</td></tr>", response.content.decode())
-        if findings == []:
-            return re.findall(r"<a href=\"(.*)\">.*</a>[\s\d\w:-]+-", response.content.decode())
-        return re.findall(r"<tr><td valign=\"top\">(&nbsp;|<img src=\"[/\w+\.]+\" alt=\"([\[\w+\s\]]*)\">)*</td><td><a href=\"([/\w\.-]*)\">.*</td><td>&nbsp;</td></tr>", response.content.decode())
+        if findings != []:
+            # print("Type 1")
+            return findings
+            
+        findings = re.findall(r" alt=\"\[[\w\s]+\]\"> <a href=\"(.*)\">.*</a>[\s\d\w:-]+-", response.content.decode())
+        if findings != []:
+            # print("Type 2")
+            return findings
+        
+        findings = re.findall(r"<tr[\s\w\"-=]*><td[\s\d\w\"-=]*><a href=\"(.*)\"><img class=\"icon\" src=\"/[\w/\d\.-]+\".*</td></tr>", response.content.decode())
+        if findings != []:
+            # print("Type 3")
+            return findings
+        
+        findings = re.findall(r"<a href=\"(.*)\">.*</a>[\s\d\w:-]+-", response.content.decode())
+        if findings != []:
+            # print("Type 4")
+            return findings
+        
+        findings = re.findall(r"<tr><td><a href=\"(.*)\">.*</a></td>", response.content.decode())
+        if findings != []:
+            # print("Type 5")
+            pass
+        return findings
     except:
         try:
             return re.findall(r"<a href=\"(.*)\">.*</a>[\s\d\w:-]+-", response.content.decode())
@@ -75,7 +96,7 @@ def isEmptyIdx(_url):
         int: -1 if it is a file 0 incase of many files 1 incase of empty index of
     """
     try:
-        response = requests.get(_url, stream=True, timeout=(5, 5), verify=False)
+        response = requests.get(_url, headers=common.headers, stream=True, timeout=(5, 5), verify=False)
     except:
         return -1
     if isFile(response):
@@ -91,7 +112,7 @@ def getContents(_url, toTry=True):
         _url (String): web link
         toTry (bool): Default is True incase of first time link False incase of second time
     """
-    response = requests.get(_url, timeout=(20, 20), verify=False)
+    response = requests.get(_url, headers=common.headers, timeout=(20, 20), verify=False)
     findings = getPaths(response)
     for finding in findings:
         try:
